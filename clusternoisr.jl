@@ -22,13 +22,14 @@ const amp_noise = 1;
 ### includes ###
 using Plots;
 using SpecialFunctions;
-using Statistics
+#using Statistics;
+
 
 ### functions ###
 
 # get a random distribution following exponential decay for every strip (pink
 # noise)
-rand_exp(N=1) = -amp_noise*log.(rand(N))
+rand_exp(N=1) = -amp_noise*log.(rand(N));
 
 # the signal, centred at mu, with a Gauss sigma
 # it is received as the integral over the Gauss distribution - which is the
@@ -86,4 +87,4 @@ for c in 1:number_events
     push!(residuals_arr_sigma, (mean(cutted_arr),mean(data_arr)))
 end
 
-residuals_arr
+residuals_arr_sigma
