@@ -55,7 +55,14 @@ enoise_arr = fill(0.0,number_strips);
 signal_arr = fill(0.0,number_strips);
 #cutted_arr = fill(0.0,number_strips);
 
-residuals_arr = [];
+# the "final output" array of data
+# residuals here are the difference between Monte Carlo Truth centre of gravity
+# and the reconstructed CoGs
+# we have two: one under the assumption that the CoG is calculated with cutted
+# data (residuals_arr_sigma), one where all signal (above the pedestal, which we
+# do not account for) is used (residuals_arr_0)
+residuals_arr_0 = [];
+residuals_arr_sigma = [];
 
 ### main loop over events ###
 for c in 1:number_events
@@ -68,10 +75,15 @@ for c in 1:number_events
     # combine exponential noise and signal to measured data
     data_arr = enoise_arr.+signal_arr;
 
+    # it is usual to have 3×noise as cutoff
     noise_cut = 3.0*amp_noise;
+
+    # data array without the noise
+    # all entries in data that are smaller than the noise cut are suppressed/set
+    # to zero, those above the cutoff amplitude are reduced by cutoff
     cutted_arr = [d < noise_cut ? 0 : d-noise_cut for d in data_arr]
 
-    push!(residuals_arr, (mean(cutted_arr),mean(data_arr)))
+    push!(residuals_arr_sigma, (mean(cutted_arr),mean(data_arr)))
 end
 
 residuals_arr
