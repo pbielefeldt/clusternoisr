@@ -30,13 +30,20 @@ rand_exp(N=1) = -log.(rand(N))
 # it is received as the integral over the Gauss distribution - which is the
 # error function from the beginning of the strip (x1) to the end of the strip
 # (x2), where the first strip is from 0. to strip_size and so on.
-function rand_erf(i,mu=number_strips*strip_size/2,sigma=cluster_width)
+function rand_erf(i,mu,sigma=cluster_width)
     x1 = (i-1)*strip_size;
     x2 = i*strip_size;
     erf((x2-mu)/sigma)-erf((x1-mu)/sigma)
 end
 
-enoise_arr = rand_exp(30);
-signal_arr = amp_signal*rand_erf.(1:30);
+# noisy plane
+enoise_arr = rand_exp(number_strips);
+
+# randomly positioned hit
+hit_mu = number_strips*strip_size/2;
+
+signal_arr = amp_signal*rand_erf.(1:number_strips, hit_mu);
+
+# combine exponential noise and signal to measured data 
 data_arr = enoise_arr.+signal_arr;
 bar(data_arr)
