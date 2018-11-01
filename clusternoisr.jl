@@ -44,7 +44,7 @@ end
 # generate a random gauss/normal distribution
 function rand_norm(mu, sigma, N=1)
     r = sqrt.(-2.0*log.(rand(N)));
-    t = 2.0*pi*.(rand(N));
+    t = 2.0*pi.*(rand(N));
     
     mu + sigma*(r.*(sin.(t)))
 end
@@ -69,7 +69,7 @@ end
 #noiselevel = fill(rand_norm)
 enoise_arr = fill(0.0,number_strips);
 signal_arr = fill(0.0,number_strips);
-#cutted_arr = fill(0.0,number_strips);
+cutted_arr = fill(0.0,number_strips);
 
 # the "final output" array of data
 # residuals here are the difference between Monte Carlo Truth centre of gravity
@@ -102,4 +102,6 @@ for c in 1:number_events
     push!(residuals_arr_sigma, (mean(cutted_arr),mean(data_arr)))
 end
 
-residuals_arr_sigma
+bar(cutted_arr)
+#
+#residuals_arr_sigma
