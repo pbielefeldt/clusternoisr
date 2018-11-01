@@ -41,6 +41,15 @@ function rand_erf(i, mu, sigma=cluster_width)
     erf((x2-mu)/sigma)-erf((x1-mu)/sigma)
 end
 
+# generate a random gauss/normal distribution
+function rand_norm(mu, sigma)
+    r = sqrt(-2.0*log(rand()));
+    t = 2.0*pi*rand();
+    
+    mu + sigma*r*sin(t)
+end
+
+
 function set_noise!(arr)
     # noisy plane
     arr .= rand_exp(number_strips);
@@ -68,7 +77,7 @@ residuals_arr_sigma = [];
 ### main loop over events ###
 for c in 1:number_events
     # randomly positioned hit
-    mu = number_strips*strip_size/2;
+    mu = rand_norm(number_strips*strip_size/2.0, strip_size*2.0);
 
     set_noise!(enoise_arr);
     set_signal!(signal_arr, mu);
