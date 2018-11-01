@@ -42,17 +42,23 @@ function rand_erf(i, mu, sigma=cluster_width)
 end
 
 # generate a random gauss/normal distribution
-function rand_norm(mu, sigma)
-    r = sqrt(-2.0*log(rand()));
-    t = 2.0*pi*rand();
+function rand_norm(mu, sigma, N=1)
+    r = sqrt.(-2.0*log.(rand(N)));
+    t = 2.0*pi*.(rand(N));
     
-    mu + sigma*r*sin(t)
+    mu + sigma*(r.*(sin.(t)))
 end
 
+# fill the noise level array, giving each strip an indiviual noise level (normal
+# distribution around specific value)
+function set_nlevel!(arr, mu, sigma)
+    
+end
 
-function set_noise!(arr)
+# fill all strips with exponential noise around their noise levels
+function set_noise!(strips_arr, nlevel_arr)
     # noisy plane
-    arr .= rand_exp(number_strips);
+    strips_arr .= rand_exp(number_strips);
 end
 
 function set_signal!(arr, mu, A=amp_signal)
@@ -60,7 +66,7 @@ function set_signal!(arr, mu, A=amp_signal)
     arr .= A.*rand_erf.(1:number_strips, mu);
 end
 
-
+#noiselevel = fill(rand_norm)
 enoise_arr = fill(0.0,number_strips);
 signal_arr = fill(0.0,number_strips);
 #cutted_arr = fill(0.0,number_strips);
