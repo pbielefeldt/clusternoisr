@@ -29,7 +29,7 @@ using SpecialFunctions;
 
 # get a random distribution following exponential decay for every strip (pink
 # noise)
-rand_exp(N=1) = -amp_noise*log.(rand(N));
+rand_exp(N=1) = -1.0*log.(rand(N));
 
 # the signal, centred at mu, with a Gauss sigma
 # it is received as the integral over the Gauss distribution - which is the
@@ -49,16 +49,11 @@ function rand_norm(mu, sigma, N=1)
     mu + sigma*(r.*(sin.(t)))
 end
 
-# fill the noise level array, giving each strip an indiviual noise level (normal
-# distribution around specific value)
-function set_nlevel!(arr, mu, sigma)
-    
-end
-
 # fill all strips with exponential noise around their noise levels
 function set_noise!(strips_arr, nlevel_arr)
     # noisy plane
-    strips_arr .= rand_exp(number_strips);
+    #strips_arr .= rand_exp(number_strips);
+    strips_arr = [rand_exp(1)*amp_noise*ai for ai in nlevel_arr];
 end
 
 function set_signal!(arr, mu, A=amp_signal)
@@ -66,7 +61,9 @@ function set_signal!(arr, mu, A=amp_signal)
     arr .= A.*rand_erf.(1:number_strips, mu);
 end
 
-#noiselevel = fill(rand_norm)
+# "strip plane" containing the mean noise information
+noiselevel = rand_norm(amp_noise, amp_noise/3.0, number_strips);
+
 enoise_arr = fill(0.0,number_strips);
 signal_arr = fill(0.0,number_strips);
 cutted_arr = fill(0.0,number_strips);
@@ -85,7 +82,7 @@ for c in 1:number_events
     # randomly positioned hit
     mu = rand_norm(number_strips*strip_size/2.0, strip_size*2.0);
 
-    set_noise!(enoise_arr);
+    set_noise!(enoise_arr, noiselevel);
     set_signal!(signal_arr, mu);
 
     # combine exponential noise and signal to measured data
