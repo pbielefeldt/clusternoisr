@@ -3,7 +3,7 @@
 ### parameters ###
 
 # number of events to loop over
-const number_events = 2;
+const number_events = 2000;
 
 # can be set to 1 without loss of generality
 const strip_size = 1;
@@ -83,14 +83,14 @@ residuals_0s_arr = [];
 
 ### main loop over events ###
 for c in 1:number_events
-    # randomly positioned hit
-    mu = rand_norm(number_strips*strip_size/2.0, hit_sigma);
-
+    # randomly positioned hit (MC truth position)
+    hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
+    
     set_noise!(enoise_arr, noiselevel);
-    set_signal!(signal_arr, mu);
+    set_signal!(signal_arr, hit_mu);
 
     # combine exponential noise and signal to measured data
-    data_arr = enoise_arr.+signal_arr;
+    data_arr = enoise_arr.+signal_arr
 
     # it is usual to have 3×noise as cutoff
     noise_cut = 3.0*amp_noise;
@@ -102,11 +102,13 @@ for c in 1:number_events
     cutted_0s_arr = [d < noise_cut ? 0 : d for d in data_arr]; # only suppress noisy strips
 
     # calculate centre of gravity for arr_0 and arr_sigma, write pulls
-    pull_nc = (mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
-    pull_0s = (mu[1] - mean(cutted_0s_arr))/hit_sigma;
+    pull_nc = (hit_mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
+    pull_0s = (hit_mu[1] - mean(cutted_0s_arr))/hit_sigma;
 
-    push!(residuals_nc_arr, pull_nc, 1);
+    push!(residuals_nc_arr, pull_nc);
+    push!(residuals_0s_arr, pull_0s);
 end
 
 pull_nc_hist = histogram(residuals_nc_arr, bins=number_strips, xlabel="pull noise corrected");
-plot(pull_nc_hist)
+pull_0s_hist = histogram(residuals_0s_arr, bins=number_strips, xlabel="pull only zero suppressed");
+plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
