@@ -108,5 +108,5 @@ for c in 1:number_events
     push!(residuals_nc_arr, pull_nc, 1);
 end
 
-pull_nc_hist = histogram(residuals_nc_arr);
+pull_nc_hist = histogram(residuals_nc_arr, bins=number_strips, xlabel="pull noise corrected");
 plot(pull_nc_hist)
