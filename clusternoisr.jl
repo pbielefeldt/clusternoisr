@@ -43,11 +43,11 @@ end
 
 # generate a random gauss/normal distribution
 function rand_norm(mu, sigma, N=1)
-    #r = sqrt.(-2.0*log.(rand(N)));
-    #t = 2.0*pi.*(rand(N));
-    #
-    #mu .+ sigma*(r.*(sin.(t)))
-    randn()
+    r = sqrt.(-2.0*log.(rand(N)));
+    t = 2.0*pi.*(rand(N));
+    
+    mu .+ sigma*(r.*(sin.(t)))
+    #randn(N)
 end
 
 # fill all strips with exponential noise around their noise levels
@@ -85,7 +85,8 @@ residuals_0s_arr = [];
 ### main loop over events ###
 for c in 1:number_events
     # randomly positioned hit (MC truth position)
-    hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
+    #hit_mu = rand_norm(number_strips*strip_size/2.0, hit_sigma);
+    hit_mu = 15.0;
 
     set_noise!(enoise_arr, noiselevel);
     set_signal!(signal_arr, hit_mu);
@@ -103,15 +104,16 @@ for c in 1:number_events
     cutted_0s_arr = [d < noise_cut ? 0 : d for d in data_arr]; # only suppress noisy strips
 
     # calculate centre of gravity for arr_0 and arr_sigma, write pulls
-    #pull_nc = (hit_mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
-    #pull_0s = (hit_mu[1] - mean(cutted_0s_arr))/hit_sigma;
-    pull_nc = mean(cutted_nc_arr);
-    pull_0s = mean(hit_mu);
+    pull_nc = (hit_mu - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
+    pull_0s = (hit_mu - mean(cutted_0s_arr))/hit_sigma;
+    #pull_nc = mean(signal_arr);
+    #pull_0s = mean(hit_mu);
 
+    println("pull nc: ", pull_nc)
     push!(residuals_nc_arr, pull_nc);
     push!(residuals_0s_arr, pull_0s);
 end
 
-pull_nc_hist = histogram(residuals_nc_arr, bins=number_strips, xlabel="pull noise corrected");
-pull_0s_hist = histogram(residuals_0s_arr, bins=number_strips, xlabel="pull only zero suppressed");
+pull_nc_hist = histogram(residuals_nc_arr, bins=number_strips, xlabel="mean cuttet nc arr") # xlabel="pull noise corrected");
+pull_0s_hist = histogram(residuals_0s_arr, bins=number_strips, xlabel="hit mu") # xlabel="pull only zero suppressed");
 plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
