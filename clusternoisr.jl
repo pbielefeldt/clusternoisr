@@ -47,7 +47,7 @@ function rand_norm(mu, sigma, N=1)
     #t = 2.0*pi.*(rand(N));
     #
     #mu .+ sigma*(r.*(sin.(t)))
-    randn()
+    mu .+ sigma .* randn(N)
 end
 
 # fill all strips with exponential noise around their noise levels
@@ -70,7 +70,7 @@ signal_arr = fill(0.0,number_strips);
 cutted_nc_arr = fill(0.0,number_strips); # noise cut
 cutted_0s_arr = fill(0.0,number_strips); # only zero suppression
 
-# tmp! (see issue #6)
+# the MC truth of hit width
 hit_sigma = strip_size*2.0;
 
 # the "final output" array of data
@@ -103,15 +103,15 @@ for c in 1:number_events
     cutted_0s_arr = [d < noise_cut ? 0 : d for d in data_arr]; # only suppress noisy strips
 
     # calculate centre of gravity for arr_0 and arr_sigma, write pulls
-    #pull_nc = (hit_mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
-    #pull_0s = (hit_mu[1] - mean(cutted_0s_arr))/hit_sigma;
-    pull_nc = mean(cutted_nc_arr);
-    pull_0s = mean(hit_mu);
+    pull_nc = (hit_mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
+    pull_0s = (hit_mu[1] - mean(cutted_0s_arr))/hit_sigma;
+    #pull_nc = mean(cutted_nc_arr);
+    #pull_0s = mean(hit_mu);
 
     push!(residuals_nc_arr, pull_nc);
     push!(residuals_0s_arr, pull_0s);
 end
 
-pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-6,6,48), xlabel="mean noise corrected");
-pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-6,6,48), xlabel="mean only zero suppressed");
+pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-16,32,96), xlabel="mean cutted_nc_arr");
+pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-16,32,96), xlabel="mean hit mu");
 plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
