@@ -112,6 +112,6 @@ for c in 1:number_events
     push!(residuals_0s_arr, pull_0s);
 end
 
-pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-6,6,48), xlabel="pull noise corrected");
-pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-6,6,48), xlabel="pull only zero suppressed");
+pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-6,6,48), xlabel="mean noise corrected");
+pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-6,6,48), xlabel="mean only zero suppressed");
 plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
