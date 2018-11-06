@@ -27,6 +27,11 @@ using Statistics;
 
 ### functions ###
 
+# generate a random gauss/normal distribution
+function rand_norm(mu, sigma, N=1)
+    mu .+ sigma .* randn(N)
+end
+
 # get a random distribution following exponential decay for every strip (pink
 # noise)
 rand_exp(N=1) = -1.0*log.(rand(N));
@@ -41,20 +46,13 @@ function rand_erf(i, mu, sigma=cluster_width)
     erf((x2-mu)/sigma)-erf((x1-mu)/sigma)
 end
 
-# generate a random gauss/normal distribution
-function rand_norm(mu, sigma, N=1)
-    r = sqrt.(-2.0*log.(rand(N)));
-    t = 2.0*pi.*(rand(N));
-    
-    mu .+ sigma*(r.*(sin.(t)))
-    #randn(N)
-end
+# "strip plane" containing the mean noise information
+noiselevel = rand_norm(amp_noise, amp_noise, number_strips);
 
 # fill all strips with exponential noise around their noise levels
 function set_noise!(strips_arr, nlevel_arr)
     # noisy plane
-    #strips_arr .= rand_exp(number_strips);
-    strips_arr = [rand_exp(1)*amp_noise*ai for ai in nlevel_arr];
+    strips_arr = [rand_exp(1)*amp_noise for ai in nlevel_arr];
 end
 
 function set_signal!(arr, mu, A=amp_signal)
@@ -62,15 +60,12 @@ function set_signal!(arr, mu, A=amp_signal)
     arr .= A.*rand_erf.(1:number_strips, mu);
 end
 
-# "strip plane" containing the mean noise information
-noiselevel = rand_norm(amp_noise, amp_noise, number_strips);
-
 enoise_arr = fill(0.0,number_strips);
 signal_arr = fill(0.0,number_strips);
 cutted_nc_arr = fill(0.0,number_strips); # noise cut
 cutted_0s_arr = fill(0.0,number_strips); # only zero suppression
 
-# tmp! (see issue #6)
+# the MC truth of hit width
 hit_sigma = strip_size*2.0;
 
 # the "final output" array of data
@@ -85,8 +80,7 @@ residuals_0s_arr = [];
 ### main loop over events ###
 for c in 1:number_events
     # randomly positioned hit (MC truth position)
-    #hit_mu = rand_norm(number_strips*strip_size/2.0, hit_sigma);
-    hit_mu = 15.0;
+    hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
 
     set_noise!(enoise_arr, noiselevel);
     set_signal!(signal_arr, hit_mu);
@@ -104,16 +98,16 @@ for c in 1:number_events
     cutted_0s_arr = [d < noise_cut ? 0 : d for d in data_arr]; # only suppress noisy strips
 
     # calculate centre of gravity for arr_0 and arr_sigma, write pulls
-    pull_nc = (hit_mu - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
-    pull_0s = (hit_mu - mean(cutted_0s_arr))/hit_sigma;
-    #pull_nc = mean(signal_arr);
-    #pull_0s = mean(hit_mu);
+    pull_nc = (hit_mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
+    pull_0s = (hit_mu[1] - mean(cutted_0s_arr))/hit_sigma;
 
-    println("pull nc: ", pull_nc)
+    # for every event, write out the pull to histo
     push!(residuals_nc_arr, pull_nc);
     push!(residuals_0s_arr, pull_0s);
 end
 
-pull_nc_hist = histogram(residuals_nc_arr, bins=number_strips, xlabel="mean cuttet nc arr") # xlabel="pull noise corrected");
-pull_0s_hist = histogram(residuals_0s_arr, bins=number_strips, xlabel="hit mu") # xlabel="pull only zero suppressed");
+pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-16,32,96), xlabel="pull (noise cut applied)");
+pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-16,32,96), xlabel="pull (only zero suppression)");
+
+# draw
 plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
