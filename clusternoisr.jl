@@ -75,8 +75,8 @@ function get_cog(arr)
 end
 
 # using an array as a histogram
-function hfill!(arr, x, amp=1)
-    bin::Int = 1+(x÷(strip_size*number_strips)) ;
+function hfill!(arr, x, xstart, xend, amp=1)
+    bin::Int = 1+(x÷(xend-xstart)) ;
     arr[bin] += amp;
 end
 
@@ -99,7 +99,7 @@ const xend = 48;
 residuals_nc_arr = zeros(1+xend-xstart);
 residuals_0s_arr = zeros(1+xend-xstart);
 
-xarr = [xstart:xend]; # I still hope there is a sane way for histos in Julia …?
+xarr = [xstart:xend]; # x-axis for the bar chart
 
 ### main loop over events ###
 for c in 1:number_events
@@ -126,10 +126,8 @@ for c in 1:number_events
     pull_0s = (hit_mu[1] - get_cog(cutted_0s_arr))/hit_sigma;
 
     # for every event, write out the pull to histo
-    #push!(residuals_nc_arr, pull_nc);
-    #push!(residuals_0s_arr, pull_0s);
-    hfill!(residuals_nc_arr, pull_nc);
-    hfill!(residuals_0s_arr, pull_0s);
+    hfill!(residuals_nc_arr, pull_nc, xstart, xend);
+    hfill!(residuals_0s_arr, pull_0s, xstart, xend);
 end
 
 pull_nc_hist = bar(residuals_nc_arr, xarr, xlabel="pull (noise cut applied)");
