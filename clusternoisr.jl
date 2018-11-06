@@ -52,12 +52,26 @@ noiselevel = rand_norm(amp_noise, amp_noise, number_strips);
 # fill all strips with exponential noise around their noise levels
 function set_noise!(strips_arr, nlevel_arr)
     # noisy plane
-    strips_arr = [rand_exp(1)*amp_noise for ai in nlevel_arr];
+    strips_arr = [rand_exp(1)*amp_noise*ai for ai in nlevel_arr];
 end
 
 function set_signal!(arr, mu, A=amp_signal)
     # signal on plane
     arr .= A.*rand_erf.(1:number_strips, mu);
+end
+
+# calculate the centre of gravity
+# the CoG is th mean of all bin-heights * bin-positions
+# caution! expects an array from 1 to number_strips
+function get_cog(arr)
+    ret = [];
+    tot_amp = 0;
+    for x in 1:length(arr)
+        amp = arr[x];
+        push!(ret, (x*strip_size)*amp);
+        tot_amp += amp;
+    end
+    mean(ret)/tot_amp
 end
 
 enoise_arr = fill(0.0,number_strips);
@@ -98,8 +112,8 @@ for c in 1:number_events
     cutted_0s_arr = [d < noise_cut ? 0 : d for d in data_arr]; # only suppress noisy strips
 
     # calculate centre of gravity for arr_0 and arr_sigma, write pulls
-    pull_nc = (hit_mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
-    pull_0s = (hit_mu[1] - mean(cutted_0s_arr))/hit_sigma;
+    pull_nc = (hit_mu[1] - get_cog(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
+    pull_0s = (hit_mu[1] - get_cog(cutted_0s_arr))/hit_sigma;
 
     # for every event, write out the pull to histo
     push!(residuals_nc_arr, pull_nc);
