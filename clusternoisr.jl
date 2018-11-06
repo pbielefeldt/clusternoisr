@@ -27,6 +27,11 @@ using Statistics;
 
 ### functions ###
 
+# generate a random gauss/normal distribution
+function rand_norm(mu, sigma, N=1)
+    mu .+ sigma .* randn(N)
+end
+
 # get a random distribution following exponential decay for every strip (pink
 # noise)
 rand_exp(N=1) = -1.0*log.(rand(N));
@@ -41,19 +46,12 @@ function rand_erf(i, mu, sigma=cluster_width)
     erf((x2-mu)/sigma)-erf((x1-mu)/sigma)
 end
 
-# generate a random gauss/normal distribution
-function rand_norm(mu, sigma, N=1)
-    #r = sqrt.(-2.0*log.(rand(N)));
-    #t = 2.0*pi.*(rand(N));
-    #
-    #mu .+ sigma*(r.*(sin.(t)))
-    mu .+ sigma .* randn(N)
-end
+# "strip plane" containing the mean noise information
+noiselevel = rand_norm(amp_noise, amp_noise, number_strips);
 
 # fill all strips with exponential noise around their noise levels
 function set_noise!(strips_arr, nlevel_arr)
     # noisy plane
-    #strips_arr .= rand_exp(number_strips);
     strips_arr = [rand_exp(1)*amp_noise*ai for ai in nlevel_arr];
 end
 
@@ -61,9 +59,6 @@ function set_signal!(arr, mu, A=amp_signal)
     # signal on plane
     arr .= A.*rand_erf.(1:number_strips, mu);
 end
-
-# "strip plane" containing the mean noise information
-noiselevel = rand_norm(amp_noise, amp_noise, number_strips);
 
 enoise_arr = fill(0.0,number_strips);
 signal_arr = fill(0.0,number_strips);
@@ -105,13 +100,14 @@ for c in 1:number_events
     # calculate centre of gravity for arr_0 and arr_sigma, write pulls
     pull_nc = (hit_mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
     pull_0s = (hit_mu[1] - mean(cutted_0s_arr))/hit_sigma;
-    #pull_nc = mean(cutted_nc_arr);
-    #pull_0s = mean(hit_mu);
-
+    
+    # for every event, write out the pull to histo
     push!(residuals_nc_arr, pull_nc);
     push!(residuals_0s_arr, pull_0s);
 end
 
-pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-16,32,96), xlabel="mean cutted_nc_arr");
-pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-16,32,96), xlabel="mean hit mu");
+pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-16,32,96), xlabel="pull (noise cut applied)");
+pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-16,32,96), xlabel="pull (only zero suppression)");
+
+# draw
 plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
