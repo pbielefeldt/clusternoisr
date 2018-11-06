@@ -77,7 +77,7 @@ end
 # using an array as a histogram
 function hfill!(arr, x, xstart, xend, nbins, amp=1)
     bin::Int = (1+(x÷(xend-xstart)))*nbins;
-    println("filling bin ", bin);
+    #println("filling bin ", bin);
     arr[bin] += amp;
 end
 
@@ -95,9 +95,9 @@ hit_sigma = strip_size*2.0;
 # we have two: one under the assumption that the CoG is calculated with cutted
 # data (residuals_nc_arr), one where all signal (above the pedestal, which we
 # do not account for) is used (residuals_0s_arr)
-const xstart = -10;
-const xend = 10;
-const nbins = 200;
+const xstart = -20;
+const xend = 20;
+const nbins = 400;
 residuals_nc_arr = zeros(nbins);
 residuals_0s_arr = zeros(nbins);
 
@@ -132,8 +132,8 @@ for c in 1:number_events
     hfill!(residuals_0s_arr, pull_0s, xstart, xend, nbins);
 end
 
-pull_nc_hist = bar(residuals_nc_arr, xarr);
-pull_0s_hist = bar(residuals_0s_arr, xarr);
+pull_nc_hist = bar(xarr, residuals_nc_arr);
+pull_0s_hist = bar(xarr, residuals_0s_arr);
 
 # draw
 plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
