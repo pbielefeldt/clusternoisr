@@ -74,10 +74,15 @@ function get_cog(arr)
     mean(ret)/tot_amp
 end
 
-enoise_arr = fill(0.0,number_strips);
-signal_arr = fill(0.0,number_strips);
-cutted_nc_arr = fill(0.0,number_strips); # noise cut
-cutted_0s_arr = fill(0.0,number_strips); # only zero suppression
+# using an array as a histogram
+function hfill!(arr, bin, amp=1)
+    arr[bin] += amp;
+end
+
+enoise_arr = zeros(number_strips);
+signal_arr = zeros(number_strips);
+cutted_nc_arr = zeros(number_strips); # noise cut
+cutted_0s_arr = zeros(number_strips); # only zero suppression
 
 # the MC truth of hit width
 hit_sigma = strip_size*2.0;
@@ -116,12 +121,15 @@ for c in 1:number_events
     pull_0s = (hit_mu[1] - get_cog(cutted_0s_arr))/hit_sigma;
 
     # for every event, write out the pull to histo
-    push!(residuals_nc_arr, pull_nc);
-    push!(residuals_0s_arr, pull_0s);
+    #push!(residuals_nc_arr, pull_nc);
+    #push!(residuals_0s_arr, pull_0s);
+    hfill!(residuals_nc_arr, pull_nc);
+    hfill!(residuals_0s_arr, pull_0s);
 end
 
-pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-16,32,96), xlabel="pull (noise cut applied)");
-pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-16,32,96), xlabel="pull (only zero suppression)");
+xarr = [-16:48]; # I still hope there is a sane way for histos in Julia …?
+pull_nc_hist = bar(residuals_nc_arr, xarr, xlabel="pull (noise cut applied)");
+pull_0s_hist = bar(residuals_0s_arr, xarr, xlabel="pull (only zero suppression)");
 
 # draw
-plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
+plot(residuals_nc_arr, residuals_0s_arr, layout=(1,2), legend=false)
