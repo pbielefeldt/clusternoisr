@@ -75,7 +75,8 @@ function get_cog(arr)
 end
 
 # using an array as a histogram
-function hfill!(arr, bin, amp=1)
+function hfill!(arr, x, amp=1)
+    bin::Int = 1+(x÷(strip_size*number_strips)) ;
     arr[bin] += amp;
 end
 
@@ -93,8 +94,12 @@ hit_sigma = strip_size*2.0;
 # we have two: one under the assumption that the CoG is calculated with cutted
 # data (residuals_nc_arr), one where all signal (above the pedestal, which we
 # do not account for) is used (residuals_0s_arr)
-residuals_nc_arr = [];
-residuals_0s_arr = [];
+const xstart = -16;
+const xend = 48;
+residuals_nc_arr = zeros(1+xend-xstart);
+residuals_0s_arr = zeros(1+xend-xstart);
+
+xarr = [xstart:xend]; # I still hope there is a sane way for histos in Julia …?
 
 ### main loop over events ###
 for c in 1:number_events
@@ -127,9 +132,8 @@ for c in 1:number_events
     hfill!(residuals_0s_arr, pull_0s);
 end
 
-xarr = [-16:48]; # I still hope there is a sane way for histos in Julia …?
 pull_nc_hist = bar(residuals_nc_arr, xarr, xlabel="pull (noise cut applied)");
 pull_0s_hist = bar(residuals_0s_arr, xarr, xlabel="pull (only zero suppression)");
 
 # draw
-plot(residuals_nc_arr, residuals_0s_arr, layout=(1,2), legend=false)
+plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
