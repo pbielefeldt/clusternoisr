@@ -75,8 +75,9 @@ function get_cog(arr)
 end
 
 # using an array as a histogram
-function hfill!(arr, x, xstart, xend, amp=1)
-    bin::Int = 1+(x÷(xend-xstart)) ;
+function hfill!(arr, x, xstart, xend, nbins, amp=1)
+    bin::Int = (1+(x÷(xend-xstart)))*nbins;
+    println("filling bin ", bin);
     arr[bin] += amp;
 end
 
@@ -94,12 +95,13 @@ hit_sigma = strip_size*2.0;
 # we have two: one under the assumption that the CoG is calculated with cutted
 # data (residuals_nc_arr), one where all signal (above the pedestal, which we
 # do not account for) is used (residuals_0s_arr)
-const xstart = -16;
-const xend = 48;
-residuals_nc_arr = zeros(1+xend-xstart);
-residuals_0s_arr = zeros(1+xend-xstart);
+const xstart = -10;
+const xend = 10;
+const nbins = 200;
+residuals_nc_arr = zeros(nbins);
+residuals_0s_arr = zeros(nbins);
 
-xarr = [xstart:xend]; # x-axis for the bar chart
+xarr = collect(xstart : (xend-xstart)/nbins : xend-((xend-xstart)/nbins)); # x-axis for the bar chart
 
 ### main loop over events ###
 for c in 1:number_events
@@ -126,12 +128,12 @@ for c in 1:number_events
     pull_0s = (hit_mu[1] - get_cog(cutted_0s_arr))/hit_sigma;
 
     # for every event, write out the pull to histo
-    hfill!(residuals_nc_arr, pull_nc, xstart, xend);
-    hfill!(residuals_0s_arr, pull_0s, xstart, xend);
+    hfill!(residuals_nc_arr, pull_nc, xstart, xend, nbins);
+    hfill!(residuals_0s_arr, pull_0s, xstart, xend, nbins);
 end
 
-pull_nc_hist = bar(residuals_nc_arr, xarr, xlabel="pull (noise cut applied)");
-pull_0s_hist = bar(residuals_0s_arr, xarr, xlabel="pull (only zero suppression)");
+pull_nc_hist = bar(residuals_nc_arr, xarr);
+pull_0s_hist = bar(residuals_0s_arr, xarr);
 
 # draw
 plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
