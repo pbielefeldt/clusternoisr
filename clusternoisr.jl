@@ -60,10 +60,31 @@ function set_signal!(arr, mu, A=amp_signal)
     arr .= A.*rand_erf.(1:number_strips, mu);
 end
 
-enoise_arr = fill(0.0,number_strips);
-signal_arr = fill(0.0,number_strips);
-cutted_nc_arr = fill(0.0,number_strips); # noise cut
-cutted_0s_arr = fill(0.0,number_strips); # only zero suppression
+# calculate the centre of gravity
+# the CoG is th mean of all bin-heights * bin-positions
+# caution! expects an array from 1 to number_strips
+function get_cog(arr)
+    ret = [];
+    tot_amp = 0;
+    for x in 1:length(arr)
+        amp = arr[x];
+        push!(ret, (x*strip_size)*amp);
+        tot_amp += amp;
+    end
+    mean(ret)/tot_amp
+end
+
+# using an array as a histogram
+function hfill!(arr, x, xstart, xend, nbins, amp=1)
+    bin::Int = (1+(x÷(xend-xstart)))*nbins;
+    #println("filling bin ", bin);
+    arr[bin] += amp;
+end
+
+enoise_arr = zeros(number_strips);
+signal_arr = zeros(number_strips);
+cutted_nc_arr = zeros(number_strips); # noise cut
+cutted_0s_arr = zeros(number_strips); # only zero suppression
 
 # the MC truth of hit width
 hit_sigma = strip_size*2.0;
@@ -74,8 +95,13 @@ hit_sigma = strip_size*2.0;
 # we have two: one under the assumption that the CoG is calculated with cutted
 # data (residuals_nc_arr), one where all signal (above the pedestal, which we
 # do not account for) is used (residuals_0s_arr)
-residuals_nc_arr = [];
-residuals_0s_arr = [];
+const xstart = -20;
+const xend = 20;
+const nbins = 400;
+residuals_nc_arr = zeros(nbins);
+residuals_0s_arr = zeros(nbins);
+
+xarr = collect(xstart : (xend-xstart)/nbins : xend-((xend-xstart)/nbins)); # x-axis for the bar chart
 
 ### main loop over events ###
 for c in 1:number_events
@@ -98,16 +124,16 @@ for c in 1:number_events
     cutted_0s_arr = [d < noise_cut ? 0 : d for d in data_arr]; # only suppress noisy strips
 
     # calculate centre of gravity for arr_0 and arr_sigma, write pulls
-    pull_nc = (hit_mu[1] - mean(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
-    pull_0s = (hit_mu[1] - mean(cutted_0s_arr))/hit_sigma;
-    
+    pull_nc = (hit_mu[1] - get_cog(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
+    pull_0s = (hit_mu[1] - get_cog(cutted_0s_arr))/hit_sigma;
+
     # for every event, write out the pull to histo
-    push!(residuals_nc_arr, pull_nc);
-    push!(residuals_0s_arr, pull_0s);
+    hfill!(residuals_nc_arr, pull_nc, xstart, xend, nbins);
+    hfill!(residuals_0s_arr, pull_0s, xstart, xend, nbins);
 end
 
-pull_nc_hist = histogram(residuals_nc_arr, bins=LinRange(-16,32,96), xlabel="pull (noise cut applied)");
-pull_0s_hist = histogram(residuals_0s_arr, bins=LinRange(-16,32,96), xlabel="pull (only zero suppression)");
+pull_nc_hist = bar(xarr, residuals_nc_arr);
+pull_0s_hist = bar(xarr, residuals_0s_arr);
 
 # draw
 plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
