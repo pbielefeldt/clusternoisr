@@ -47,7 +47,7 @@ function rand_erf(i, mu, sigma=cluster_width)
 end
 
 # "strip plane" containing the mean noise information
-noiselevel = rand_norm(amp_noise, amp_noise, number_strips);
+noiselevel = rand_norm(amp_noise, amp_noise/3.0, number_strips);
 
 # fill all strips with exponential noise around their noise levels
 function set_noise!(strips_arr, nlevel_arr)
@@ -63,15 +63,8 @@ end
 # calculate the centre of gravity
 # the CoG is th mean of all bin-heights * bin-positions
 # caution! expects an array from 1 to number_strips
+#TODO: it would be better to have a cluster finder here!
 function get_cog(arr)
-    # ret = [];
-    # tot_amp = 0;
-    # for x in 1:length(arr)
-    #     amp = arr[x];
-    #     push!(ret, (x*strip_size)*amp);
-    #     tot_amp += amp;
-    # end
-    # mean(ret)/tot_amp
     sum((0.5:(length(arr)-0.5)) .* arr)/sum(arr)
 end
 
@@ -106,38 +99,37 @@ residuals_0s_arr = zeros(number_events);
 
 xarr = collect(xstart : (xend-xstart)/nbins : xend-((xend-xstart)/nbins)); # x-axis for the bar chart
 
-v = [];
 ### main loop over events ###
 for c in 1:number_events
     # randomly positioned hit (MC truth position)
     hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
     set_noise!(enoise_arr, noiselevel);
     set_signal!(signal_arr, hit_mu);
-    #bar(enoise_arr, bins=100)
-    #bar(signal_arr, bins=100)
 
     # combine exponential noise and signal to measured data
     data_arr = enoise_arr.+signal_arr
+
     # bar(data_arr)
     # it is usual to have 3×noise as cutoff
     noise_cut = 3.0*amp_noise;
+
     # data array without the noise
     # all entries in data that are smaller than the noise cut are suppressed/set
     # to zero, those above the cutoff amplitude are reduced by cutoff
     cutted_nc_arr = [d < noise_cut ? 0 : d-noise_cut for d in data_arr]; # cut 3 sigma
     cutted_0s_arr = [d < noise_cut ? 0 : d for d in data_arr]; # only suppress noisy strips
-    # calculate centre of gravity for arr_0 and arr_sigma, write pulls
-    #println("hmu: ", hit_mu[1]);
-    #println("CoG: ", get_cog(cutted_nc_arr));
-    pull_nc = (hit_mu[1] - get_cog(cutted_nc_arr))/hit_sigma; #TODO: mu is seen as array of length 1 >.<
-    pull_0s = (hit_mu[1] - get_cog(cutted_0s_arr))/hit_sigma;
+
+    # caclulate the residual
+    # not the pull: there is not good meaure for the measurement uncertainty,
+    # and it was only a constant value anyway ...
+    residual_nc = (hit_mu[1] - get_cog(cutted_nc_arr));
+    residual_0s = (hit_mu[1] - get_cog(cutted_0s_arr));
+
     # for every event, write out the pull to histo
-    residuals_nc_arr[c] = pull_nc
-    residuals_0s_arr[c] = pull_0s
-    # hfill!(residuals_nc_arr, pull_nc, xstart, xend, nbins);
-    # hfill!(residuals_0s_arr, pull_0s, xstart, xend, nbins);
-    # push!(v, get_cog(data_arr))
-    # push!(v, get_cog(data_arr))
+    # push!(residuals_nc_arr, residual_nc); #TODO: This seems to have many 0's -- why?
+    # push!(residuals_0s_arr, residual_0s);
+    residuals_nc_arr[c] = residual_nc;
+    residuals_0s_arr[c] = residual_0s;
 end
 
 function make_plot(;xlim=2.0)
@@ -146,21 +138,10 @@ function make_plot(;xlim=2.0)
     h2 = histogram!(pl[2], residuals_0s_arr, bins=LinRange(-xlim,xlim,200), xlab="pull (only zeros suppressed)")
     h1max = max(pl[1][1][:y][1:6:end]...)
     h2max = max(pl[2][1][:y][1:6:end]...)
-    @show h1max, h2max
+    # @show h1max, h2max
     sig1, sig2 = round(sqrt(var(residuals_nc_arr)),digits=3), round(sqrt(var(residuals_0s_arr)),digits=3)
     annotate!([(xlim,0.8*h1max,text("rms = $(sig1)",:right))], subplot=1)
     annotate!([(xlim,0.8*h2max,text("rms = $(sig2)",:right))], subplot=2)
 end
 
 make_plot()
-
-
-# var(3*randn(1000))
-# round(0.3333333, digi)
-# histogram(v)
-
-# pull_nc_hist = bar(xarr, residuals_nc_arr);
-# pull_0s_hist = bar(xarr, residuals_0s_arr);
-# bar(data_arr)
-# draw
-#plot(pull_nc_hist, pull_0s_hist, layout=(1,2), legend=false)
