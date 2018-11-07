@@ -3,7 +3,7 @@
 ### parameters ###
 
 # number of events to loop over
-const number_events = 10000;
+const number_events = 50000;
 
 # can be set to 1 without loss of generality
 const strip_size = 1;
@@ -18,6 +18,8 @@ const number_strips = 30;
 const amp_signal = 50;
 const amp_noise = 1;
 
+# the MC truth of hit width
+hit_sigma = strip_size*2.0;
 
 ### includes ###
 using Plots;
@@ -68,36 +70,25 @@ function get_cog(arr)
     sum((0.5:(length(arr)-0.5)) .* arr)/sum(arr)
 end
 
-# using an array as a histogram
-function hfill!(arr, x, xstart, xend, nbins, amp=1)
-    len = (xend-xstart);
-    pos = x/len;
-    bin::Int = floor(Int, 1.5+pos*nbins) ;
-    #println("filling bin ", bin);
-    arr[bin] += amp;
-end
-
-enoise_arr = zeros(number_strips);
-signal_arr = zeros(number_strips);
-cutted_nc_arr = zeros(number_strips); # noise cut
-cutted_0s_arr = zeros(number_strips); # only zero suppression
-
-# the MC truth of hit width
-hit_sigma = strip_size*2.0;
-
+### storage arrays ###
 # the "final output" array of data
 # residuals here are the difference between Monte Carlo Truth centre of gravity
 # and the reconstructed CoGs
 # we have two: one under the assumption that the CoG is calculated with cutted
 # data (residuals_nc_arr), one where all signal (above the pedestal, which we
 # do not account for) is used (residuals_0s_arr)
-const xstart = -20;
-const xend = 30;
-const nbins = 500;
 residuals_nc_arr = zeros(number_events);
 residuals_0s_arr = zeros(number_events);
 
-xarr = collect(xstart : (xend-xstart)/nbins : xend-((xend-xstart)/nbins)); # x-axis for the bar chart
+# keeps exponential noise for each pad (re-calculated per event)
+enoise_arr = zeros(number_strips);
+# a gaus smeared over several pads
+signal_arr = zeros(number_strips);
+# noise cut
+cutted_nc_arr = zeros(number_strips);
+# only zero suppression
+cutted_0s_arr = zeros(number_strips);
+
 
 ### main loop over events ###
 for c in 1:number_events
@@ -134,8 +125,8 @@ end
 
 function make_plot(;xlim=2.0)
     pl = plot(layout=grid(1,2), size=(1000,500), legend=false)
-    h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,200), xlab="pull (noise corrected, 3 sigma)");
-    h2 = histogram!(pl[2], residuals_0s_arr, bins=LinRange(-xlim,xlim,200), xlab="pull (only zeros suppressed)");
+    h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,100), xlab="pull (noise corrected, 3 sigma)");
+    h2 = histogram!(pl[2], residuals_0s_arr, bins=LinRange(-xlim,xlim,100), xlab="pull (only zeros suppressed)");
     h1max = max(pl[1][1][:y][1:6:end]...);
     h2max = max(pl[2][1][:y][1:6:end]...);
     # @show h1max, h2max
