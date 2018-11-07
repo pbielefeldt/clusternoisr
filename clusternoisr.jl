@@ -3,7 +3,7 @@
 ### parameters ###
 
 # number of events to loop over
-const number_events = 2000;
+const number_events = 10000;
 
 # can be set to 1 without loss of generality
 const strip_size = 1;
@@ -140,13 +140,13 @@ for c in 1:number_events
     # push!(v, get_cog(data_arr))
 end
 
-function make_plot(;xlim=1.3)
-    pl = plot(layout=grid(1,2), size=(1000,500))
-    h1 = histogram!(pl[1], residuals_nc_arr, lab="one", bins=LinRange(-xlim,xlim,50))
-    h2 = histogram!(pl[2], residuals_0s_arr, lab="two", bins=LinRange(-xlim,xlim,50))
-    h1max = max(h1[1][1][:y][1:6:end]...)
-    h2max = max(h2[1][1][:y][1:6:end]...)
-    # @show h1max, h2max
+function make_plot(;xlim=2.0)
+    pl = plot(layout=grid(1,2), size=(1000,500), legend=false)
+    h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,200), xlab="pull (noise corrected, 3 sigma)")
+    h2 = histogram!(pl[2], residuals_0s_arr, bins=LinRange(-xlim,xlim,200), xlab="pull (only zeros suppressed)")
+    h1max = max(pl[1][1][:y][1:6:end]...)
+    h2max = max(pl[2][1][:y][1:6:end]...)
+    @show h1max, h2max
     sig1, sig2 = round(sqrt(var(residuals_nc_arr)),digits=3), round(sqrt(var(residuals_0s_arr)),digits=3)
     annotate!([(xlim,0.8*h1max,text("rms = $(sig1)",:right))], subplot=1)
     annotate!([(xlim,0.8*h2max,text("rms = $(sig2)",:right))], subplot=2)
