@@ -76,7 +76,9 @@ end
 
 # using an array as a histogram
 function hfill!(arr, x, xstart, xend, nbins, amp=1)
-    bin::Int = (1+(x÷(xend-xstart)))*nbins;
+    len = (xend-xstart);
+    pos = x/len;
+    bin::Int = trunc(Int, pos*nbins) ;
     #println("filling bin ", bin);
     arr[bin] += amp;
 end
@@ -97,7 +99,7 @@ hit_sigma = strip_size*2.0;
 # do not account for) is used (residuals_0s_arr)
 const xstart = -20;
 const xend = 20;
-const nbins = 400;
+const nbins = 200;
 residuals_nc_arr = zeros(nbins);
 residuals_0s_arr = zeros(nbins);
 
