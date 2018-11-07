@@ -1,31 +1,35 @@
 #!/usr/bin/env julia
 
+
 ### parameters ###
 
 # number of events to loop over
-const number_events = 50000;
+const number_events = 10000;
 
 # can be set to 1 without loss of generality
 const strip_size = 1;
 
 # width of the signal cluster, in units of the strip size
-const cluster_width = 3;
+const cluster_width = 5;
 
 # number of strips in the detector (size of arrays)
-const number_strips = 30;
+const number_strips = 255;
 
 # in a.u., height of the signal
-const amp_signal = 50;
-const amp_noise = 1;
+const amp_signal = 150;
+const amp_noise = 10;
 
 # the MC truth of hit width
 hit_sigma = strip_size*2.0;
 
+
 ### includes ###
+
 using Plots;
 using SpecialFunctions;
 using Statistics;
 #using Compat, Random, Distributions;
+
 
 ### functions ###
 
@@ -57,8 +61,8 @@ function set_noise!(strips_arr, nlevel_arr)
     strips_arr .= [rand_exp(1)[1]*amp_noise*abs(ai) for ai in nlevel_arr];
 end
 
+# signal on plane
 function set_signal!(arr, mu, A=amp_signal)
-    # signal on plane
     arr .= A.*rand_erf.(1:number_strips, mu);
 end
 
@@ -69,6 +73,7 @@ end
 function get_cog(arr)
     sum((0.5:(length(arr)-0.5)) .* arr)/sum(arr)
 end
+
 
 ### storage arrays ###
 # the "final output" array of data
@@ -91,9 +96,11 @@ cutted_0s_arr = zeros(number_strips);
 
 
 ### main loop over events ###
+
 for c in 1:number_events
     # randomly positioned hit (MC truth position)
-    hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
+    # hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
+    hit_mu = (number_strips+1)*strip_size/2.0;
     set_noise!(enoise_arr, noiselevel);
     set_signal!(signal_arr, hit_mu);
 
@@ -123,10 +130,10 @@ for c in 1:number_events
     residuals_0s_arr[c] = residual_0s;
 end
 
-function make_plot(;xlim=2.0)
+function make_plot(;xlim=32.0)
     pl = plot(layout=grid(1,2), size=(1000,500), legend=false)
-    h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,100), xlab="pull (noise corrected, 3 sigma)");
-    h2 = histogram!(pl[2], residuals_0s_arr, bins=LinRange(-xlim,xlim,100), xlab="pull (only zeros suppressed)");
+    h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,100), xlab="residual (noise corrected, 3 sigma) / #strips");
+    h2 = histogram!(pl[2], residuals_0s_arr, bins=LinRange(-xlim,xlim,100), xlab="residual (only zeros suppressed) / #strips");
     h1max = max(pl[1][1][:y][1:6:end]...);
     h2max = max(pl[2][1][:y][1:6:end]...);
     # @show h1max, h2max
