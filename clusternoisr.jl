@@ -72,7 +72,7 @@ end
 function hfill!(arr, x, xstart, xend, nbins, amp=1)
     len = (xend-xstart);
     pos = x/len;
-    bin::Int = floor(Int, 1+pos*nbins) ;
+    bin::Int = floor(Int, 1.5+pos*nbins) ;
     #println("filling bin ", bin);
     arr[bin] += amp;
 end
