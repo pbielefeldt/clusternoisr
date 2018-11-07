@@ -4,7 +4,7 @@
 ### parameters ###
 
 # number of events to loop over
-const number_events = 10000;
+const number_events = 50000;
 
 # can be set to 1 without loss of generality
 const strip_size = 1;
@@ -20,7 +20,7 @@ const amp_signal = 150;
 const amp_noise = 10;
 
 # the MC truth of hit width
-hit_sigma = strip_size*2.0;
+hit_sigma = strip_size*0.667;
 
 
 ### includes ###
@@ -68,10 +68,38 @@ end
 
 # calculate the centre of gravity
 # the CoG is th mean of all bin-heights * bin-positions
-# caution! expects an array from 1 to number_strips
-#TODO: it would be better to have a cluster finder here!
+# first, it has some cluster finding: starts at the maximum bin, goes left and
+# right until it finds a bin with value 0.0 and stops there
 function get_cog(arr)
-    sum((0.5:(length(arr)-0.5)) .* arr)/sum(arr)
+    v = []; # contains all values of arr that are neighbours to the cluster
+    max_bin_n = findmax(arr)[2];
+
+    i::Int = max_bin_n; # counter
+    # push!(v, arr[i]); <- already covered
+
+    # left of maximum
+    counter = 1;
+    while counter <= number_strips
+        if arr[i] > 0.0
+            push!(v, arr[i]);
+            i = i-1;
+        else
+            break
+        end
+        counter += 1;
+    end
+    # reset i (don't count arr[i] twice, though)
+    i = max_bin_n+1;
+    # right of maximum
+    while counter <= number_strips
+        if arr[i] > 0.0
+            push!(v, arr[i]);
+            i = i+1;
+        else
+            break
+        end
+    end
+    sum((0.5:(length(v)-0.5)) .* v)/sum(v)
 end
 
 
@@ -101,6 +129,7 @@ for c in 1:number_events
     # randomly positioned hit (MC truth position)
     # hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
     hit_mu = (number_strips+1)*strip_size/2.0;
+
     set_noise!(enoise_arr, noiselevel);
     set_signal!(signal_arr, hit_mu);
 
