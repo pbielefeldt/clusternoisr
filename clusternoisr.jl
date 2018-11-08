@@ -83,7 +83,7 @@ function get_cog(arr)
 
     # left of maximum
     println("left ...")
-    while i < 0
+    while i > 0
         println(i)
         # fill data to v (until minimum is reached)
         if arr[i] > 0.0
