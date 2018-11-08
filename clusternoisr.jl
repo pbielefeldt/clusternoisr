@@ -71,27 +71,38 @@ end
 # first, it has some cluster finding: starts at the maximum bin, goes left and
 # right until it finds a bin with value 0.0 and stops there
 function get_cog(arr)
+
     v = []; # contains all values of arr that are neighbours to the cluster
     max_bin_n = findmax(arr)[2];
 
     i::Int = max_bin_n; # counter
+    max_i::Int = length(arr);
     # push!(v, arr[i]); <- already covered
 
+    println("\ncentre of gravity, array size ", max_i)
+
     # left of maximum
-    counter = 1;
-    while counter <= number_strips
+    println("left ...")
+    while i < 0
+        println(i)
+        # fill data to v (until minimum is reached)
         if arr[i] > 0.0
             push!(v, arr[i]);
             i = i-1;
         else
             break
         end
-        counter += 1;
     end
+
     # reset i (don't count arr[i] twice, though)
     i = max_bin_n+1;
+
     # right of maximum
-    while counter <= number_strips
+    println("right ...")
+    while i < max_i
+        println(i)
+
+        # fill data to v (until minimum is reached)
         if arr[i] > 0.0
             push!(v, arr[i]);
             i = i+1;
