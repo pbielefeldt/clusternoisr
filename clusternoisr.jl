@@ -72,22 +72,20 @@ end
 # right until it finds a bin with value 0.0 and stops there
 function get_cog(arr)
 
-    v = []; # contains all values of arr that are neighbours to the cluster
+    # contains all values of arr that are neighbours to the cluster
+    # v[i][1] is the position (i.e. strip number)
+    # v[i][2] is the weight (i.e. arr entry)
+    v = [];
     max_bin_n = findmax(arr)[2];
 
     i::Int = max_bin_n; # counter
     max_i::Int = length(arr);
-    # push!(v, arr[i]); <- already covered
-
-    println("\ncentre of gravity, array size ", max_i)
 
     # left of maximum
-    println("left ...")
     while i > 0
-        println(i)
         # fill data to v (until minimum is reached)
         if arr[i] > 0.0
-            push!(v, arr[i]);
+            push!(v, (i, arr[i]));
             i = i-1;
         else
             break
@@ -98,19 +96,24 @@ function get_cog(arr)
     i = max_bin_n+1;
 
     # right of maximum
-    println("right ...")
     while i < max_i
-        println(i)
-
         # fill data to v (until minimum is reached)
         if arr[i] > 0.0
-            push!(v, arr[i]);
+            push!(v, (i, arr[i]));
             i = i+1;
         else
             break
         end
     end
-    sum((0.5:(length(v)-0.5)) .* v)/sum(v)
+    # cog in units of strip_size
+    # sum((0.5:(length(v)-0.5)) .* v)/sum(v) #TODO: Only works if v is sorted by i
+    cog = 0.0;
+    sumx = 0.0;
+    for x in v
+        cog = cog + ((x[1]-0.5)*x[2]);
+        sumx = sumx + x[2];
+    end
+    cog/sumx
 end
 
 
@@ -160,6 +163,7 @@ for c in 1:number_events
     # caclulate the residual
     # not the pull: there is not good meaure for the measurement uncertainty,
     # and it was only a constant value anyway ...
+    println("cog ", get_cog(cutted_nc_arr))
     residual_nc = (hit_mu[1] - get_cog(cutted_nc_arr));
     residual_0s = (hit_mu[1] - get_cog(cutted_0s_arr));
 
