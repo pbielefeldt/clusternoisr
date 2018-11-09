@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 
-
+t0=time_ns();
 ### parameters ###
 
 # number of events to loop over
@@ -24,7 +24,7 @@ hit_sigma = strip_size*0.667;
 
 
 ### includes ###
-
+t1 = time_ns();
 using Plots;
 using SpecialFunctions;
 using Statistics;
@@ -32,6 +32,8 @@ using Random;
 #using Compat, Distributions;
 
 Random.seed!(43);
+t2 = time_ns();
+println("includes took $((t2-t1)/1.0e6) ms")
 
 ### functions ###
 
@@ -140,7 +142,7 @@ cutted_0s_arr = zeros(number_strips);
 
 
 ### main loop over events ###
-
+t1 = time_ns();
 for c in 1:number_events
     # randomly positioned hit (MC truth position)
     # hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
@@ -174,8 +176,17 @@ for c in 1:number_events
     # push!(residuals_0s_arr, residual_0s);
     residuals_nc_arr[c] = residual_nc;
     residuals_0s_arr[c] = residual_0s;
+    
+    # some timing
+    tX = (time_ns()-t1)/1.0e9;
+    if 10*c % number_events == 0
+        println("$c events with $(round(c/tX, digits=2)) Hz")
+    end
 end
+t2 = time_ns();
+println("main loop took $((t2-t1)/1.0e9) s")
 
+t1 = time_ns();
 function make_plot(;xlim=5.0)
     pl = plot(layout=grid(1,2), size=(1000,500), legend=false)
     h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,100), xlab="residual (noise corrected, 3 sigma) / #strips");
@@ -190,6 +201,8 @@ function make_plot(;xlim=5.0)
 end
 
 make_plot()
+t2 = time_ns();
+println("plotting took $((t2-t1)/1.0e6) ms")
 
 # plot(
 #     layout=grid(2,3), legend=false,
@@ -200,3 +213,4 @@ make_plot()
 #     bar([0:255], cutted_0s_arr, xlabel="0 supressed"), 
 #     bar([0:255], cutted_nc_arr, xlabel="amp cutted")
 #     )
+println("### total time $((t2-t0)/1.0e9) s ###")
