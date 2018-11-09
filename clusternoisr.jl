@@ -27,7 +27,7 @@ hit_sigma = strip_size*0.667;
 t1 = time_ns();
 using Plots;
 using SpecialFunctions;
-using Statistics;
+#using Statistics;
 using Random;
 #using Compat, Distributions;
 
