@@ -16,7 +16,7 @@ const cluster_width = 5;
 const number_strips = 255;
 
 # in a.u., height of the signal
-const amp_signal = 150;
+const amp_signal = 500;
 const amp_noise = 10;
 
 # the MC truth of hit width
@@ -58,7 +58,7 @@ noiselevel = rand_norm(amp_noise, amp_noise/3.0, number_strips);
 # fill all strips with exponential noise around their noise levels
 function set_noise!(strips_arr, nlevel_arr)
     # note: the abs() is a bit of an unphysical hack ...
-    strips_arr .= [rand_exp(1)[1]*amp_noise*abs(ai) for ai in nlevel_arr];
+    strips_arr .= [rand_exp(1)[1]*abs(ai) for ai in nlevel_arr];
 end
 
 # signal on plane
@@ -188,3 +188,4 @@ function make_plot(;xlim=32.0)
 end
 
 make_plot()
+
