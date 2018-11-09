@@ -4,7 +4,7 @@
 ### parameters ###
 
 # number of events to loop over
-const number_events = 1;
+const number_events = 150000;
 
 # can be set to 1 without loss of generality
 const strip_size = 1;
@@ -16,7 +16,7 @@ const cluster_width = 5;
 const number_strips = 255;
 
 # in a.u., height of the signal
-const amp_signal = 250;
+const amp_signal = 200;
 const amp_noise = 10;
 
 # the MC truth of hit width
@@ -139,8 +139,7 @@ cutted_0s_arr = zeros(number_strips);
 
 ### main loop over events ###
 
-#for c in 1:number_events
-c=1
+for c in 1:number_events
     # randomly positioned hit (MC truth position)
     # hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
     hit_mu = (number_strips+1)*strip_size/2.0;
@@ -164,7 +163,7 @@ c=1
     # caclulate the residual
     # not the pull: there is not good meaure for the measurement uncertainty,
     # and it was only a constant value anyway ...
-    println("cog ", get_cog(cutted_nc_arr))
+    #println("cog ", get_cog(cutted_nc_arr))
     residual_nc = (hit_mu[1] - get_cog(cutted_nc_arr));
     residual_0s = (hit_mu[1] - get_cog(cutted_0s_arr));
 
@@ -173,9 +172,9 @@ c=1
     # push!(residuals_0s_arr, residual_0s);
     residuals_nc_arr[c] = residual_nc;
     residuals_0s_arr[c] = residual_0s;
-#end
+end
 
-function make_plot(;xlim=32.0)
+function make_plot(;xlim=5.0)
     pl = plot(layout=grid(1,2), size=(1000,500), legend=false)
     h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,100), xlab="residual (noise corrected, 3 sigma) / #strips");
     h2 = histogram!(pl[2], residuals_0s_arr, bins=LinRange(-xlim,xlim,100), xlab="residual (only zeros suppressed) / #strips");
@@ -190,12 +189,12 @@ end
 
 make_plot()
 
-plot(
-    layout=grid(2,3), legend=false,
-    bar([0:255], noiselevel, xlabel="noise level"), 
-    bar([0:255], enoise_arr, xlabel="exp. noise"), 
-    bar([0:255], signal_arr, xlabel="signal"), 
-    bar([0:255], data_arr, xlabel="signal+noise"), 
-    bar([0:255], cutted_0s_arr, xlabel="0 supressed"), 
-    bar([0:255], cutted_nc_arr, xlabel="amp cutted")
-    )
+# plot(
+#     layout=grid(2,3), legend=false,
+#     bar([0:255], noiselevel, xlabel="noise level"), 
+#     bar([0:255], enoise_arr, xlabel="exp. noise"), 
+#     bar([0:255], signal_arr, xlabel="signal"), 
+#     bar([0:255], data_arr, xlabel="signal+noise"), 
+#     bar([0:255], cutted_0s_arr, xlabel="0 supressed"), 
+#     bar([0:255], cutted_nc_arr, xlabel="amp cutted")
+#     )
