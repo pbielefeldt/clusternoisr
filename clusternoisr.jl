@@ -28,8 +28,10 @@ hit_sigma = strip_size*0.667;
 using Plots;
 using SpecialFunctions;
 using Statistics;
-#using Compat, Random, Distributions;
+using Random;
+#using Compat, Distributions;
 
+Random.seed!(43);
 
 ### functions ###
 
