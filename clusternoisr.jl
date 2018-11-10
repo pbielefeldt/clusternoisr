@@ -4,7 +4,7 @@ t0=time_ns();
 ### parameters ###
 
 # number of events to loop over
-const number_events = 150000;
+const number_events = 2000;
 
 # can be set to 1 without loss of generality
 const strip_size = 1;
@@ -27,7 +27,7 @@ hit_sigma = strip_size*0.667;
 t1 = time_ns();
 using Plots;
 using SpecialFunctions;
-#using Statistics;
+using Statistics;
 using Random;
 #using Compat, Distributions;
 
@@ -186,7 +186,7 @@ end
 t2 = time_ns();
 println("main loop took $((t2-t1)/1.0e9) s")
 
-t1 = time_ns();
+#t1 = time_ns();
 function make_plot(;xlim=5.0)
     pl = plot(layout=grid(1,2), size=(1000,500), legend=false)
     h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,100), xlab="residual (noise corrected, 3 sigma) / #strips");
@@ -200,10 +200,6 @@ function make_plot(;xlim=5.0)
     annotate!([(xlim,0.8*h2max,text("sigma: $(sig2) \nmean: $(mean2)",:right))], subplot=2)
 end
 
-make_plot()
-t2 = time_ns();
-println("plotting took $((t2-t1)/1.0e6) ms")
-
 # plot(
 #     layout=grid(2,3), legend=false,
 #     bar([0:255], noiselevel, xlabel="noise level"), 
@@ -213,4 +209,8 @@ println("plotting took $((t2-t1)/1.0e6) ms")
 #     bar([0:255], cutted_0s_arr, xlabel="0 supressed"), 
 #     bar([0:255], cutted_nc_arr, xlabel="amp cutted")
 #     )
+
+t2 = time_ns();
 println("### total time $((t2-t0)/1.0e9) s ###")
+
+make_plot()
