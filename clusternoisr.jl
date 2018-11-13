@@ -16,7 +16,6 @@
 t0=time_ns();
 
 
-t0=time_ns();
 ### parameters ###
 
 # number of events to loop over
@@ -203,16 +202,3 @@ t2 = time_ns();
 println("### total time $((t2-t0)/1.0e9) s ###")
 
 make_plot()
-t2 = time_ns();
-println("plotting took $((t2-t1)/1.0e6) ms")
-
-# plot(
-#     layout=grid(2,3), legend=false,
-#     bar([0:255], noiselevel, xlabel="noise level"), 
-#     bar([0:255], enoise_arr, xlabel="exp. noise"), 
-#     bar([0:255], signal_arr, xlabel="signal"), 
-#     bar([0:255], data_arr, xlabel="signal+noise"), 
-#     bar([0:255], cutted_0s_arr, xlabel="0 supressed"), 
-#     bar([0:255], cutted_nc_arr, xlabel="amp cutted")
-#     )
-println("### total time $((t2-t0)/1.0e9) s ###")
