@@ -1,39 +1,49 @@
 #!/usr/bin/env julia
-
+################################################################################
+# A tool to simulate the behaviour of a strip plane (e.g. in a gaseous         #
+# detector), where noise and signal are treated in different ways: Strips      #
+# below the noise threshold (typically 3σ of the assumed noise) are set to a   #
+# value of zero.                                                               #
+# Then, either all other strips are used with their entire amplitude to        #
+# calculate the hit position (i.e. the centre of gravity), or, on all strips   #
+# that survived the first cut, the 3σ-noise is subtracted before the c.o.g. is #
+# calculated. I wrote this to investigate the effects either has on the        #
+# resolution (here, the residual distribution width) of the detector.          #
+#                                                                              #
+# (C) 2018, Philipp Bielefeldt, Uni Bonn                                       #
+# released under the terms of Mozilla Public License (see file)                #
+################################################################################
 t0=time_ns();
+
+
 ### parameters ###
 
 # number of events to loop over
 const number_events = 2000;
-
 # can be set to 1 without loss of generality
 const strip_size = 1;
-
 # width of the signal cluster, in units of the strip size
 const cluster_width = 5;
-
 # number of strips in the detector (size of arrays)
 const number_strips = 255;
-
 # in a.u., height of the signal
 const amp_signal = 200;
 const amp_noise = 10;
-
 # the MC truth of hit width
 hit_sigma = strip_size*0.667;
 
 
 ### includes ###
+
 t1 = time_ns();
 using Plots;
 using SpecialFunctions;
 using Statistics;
 using Random;
-#using Compat, Distributions;
-
 Random.seed!(43);
 t2 = time_ns();
 println("includes took $((t2-t1)/1.0e6) ms")
+
 
 ### functions ###
 
@@ -78,8 +88,7 @@ end
 function trunc_arr(arr)
     N = Int(trunc(length(arr)/2)); # number of central bin
     z = 1e-16;  # used as a replacement for z (set to machine precision?)
-    ret = zeros(2*N); # returned array
-
+    ret = zeros(length(arr)); # returned array
     # loop to the left
     for i in N:-1:1
         if arr[i] < z
@@ -87,7 +96,6 @@ function trunc_arr(arr)
         end
         ret[i] = arr[i]; # copy values until reaching zero
     end
-
     # loop to the right
     #NOTE: will probably use arr[N] twice in the loop (but that's ok)
     for i in N:+1:2*N
@@ -96,7 +104,6 @@ function trunc_arr(arr)
         end
         ret[i] = arr[i]; # copy values until reaching zero
     end
-
     return ret
 end
 
@@ -108,54 +115,10 @@ function get_cog(arr)
     tarr = trunc_arr(arr);
     sum((0.5:(length(tarr)-0.5)) .* tarr)/sum(tarr)
 end
-# function get_cog(arr)
-#
-#     # contains all values of arr that are neighbours to the cluster
-#     # v[i][1] is the position (i.e. strip number)
-#     # v[i][2] is the weight (i.e. arr entry)
-#     v = [];
-#     max_bin_n = findmax(arr)[2];
-#
-#     i::Int = max_bin_n; # counter
-#     max_i::Int = length(arr);
-#
-#     # left of maximum
-#     while i > 0
-#         # fill data to v (until minimum is reached)
-#         if arr[i] > 0.0
-#             push!(v, (i, arr[i]));
-#             i = i-1;
-#         else
-#             break
-#         end
-#     end
-#
-#     # reset i (don't count arr[i] twice, though)
-#     i = max_bin_n+1;
-#
-#     # right of maximum
-#     while i < max_i
-#         # fill data to v (until minimum is reached)
-#         if arr[i] > 0.0
-#             push!(v, (i, arr[i]));
-#             i = i+1;
-#         else
-#             break
-#         end
-#     end
-#     # cog in units of strip_size
-#     # sum((0.5:(length(v)-0.5)) .* v)/sum(v) #TODO: Only works if v is sorted by i
-#     cog = 0.0;
-#     sumx = 0.0;
-#     for x in v
-#         cog = cog + ((x[1]-0.5)*x[2]);
-#         sumx = sumx + x[2];
-#     end
-#     cog/sumx
-# end
 
 
 ### storage arrays ###
+
 # the "final output" array of data
 # residuals here are the difference between Monte Carlo Truth centre of gravity
 # and the reconstructed CoGs
@@ -164,7 +127,6 @@ end
 # do not account for) is used (residuals_0s_arr)
 residuals_nc_arr = zeros(number_events);
 residuals_0s_arr = zeros(number_events);
-
 # keeps exponential noise for each pad (re-calculated per event)
 enoise_arr = zeros(number_strips);
 # a gaus smeared over several pads
@@ -176,38 +138,29 @@ cutted_0s_arr = zeros(number_strips);
 
 
 ### main loop over events ###
+
 t1 = time_ns();
 for c in 1:number_events
     # randomly positioned hit (MC truth position)
     # hit_mu = rand_norm((number_strips+1)*strip_size/2.0, hit_sigma);
     hit_mu = (number_strips+1)*strip_size/2.0;
-
     set_noise!(enoise_arr, noiselevel);
     set_signal!(signal_arr, hit_mu);
-
     # combine exponential noise and signal to measured data
     data_arr = enoise_arr.+signal_arr
-
-    # bar(data_arr)
     # it is usual to have 3×noise as cutoff
     noise_cut = 3.0*amp_noise;
-
     # data array without the noise
     # all entries in data that are smaller than the noise cut are suppressed/set
     # to zero, those above the cutoff amplitude are reduced by cutoff
     cutted_nc_arr = [d < noise_cut ? 0 : d-noise_cut for d in data_arr]; # cut 3 sigma
     cutted_0s_arr = [d < noise_cut ? 0 : d for d in data_arr]; # only suppress noisy strips
-
     # caclulate the residual
     # not the pull: there is not good meaure for the measurement uncertainty,
     # and it was only a constant value anyway ...
-    #println("cog ", get_cog(cutted_nc_arr))
     residual_nc = (hit_mu[1] - get_cog(cutted_nc_arr));
     residual_0s = (hit_mu[1] - get_cog(cutted_0s_arr));
-
     # for every event, write out the pull to histo
-    # push!(residuals_nc_arr, residual_nc); #TODO: This seems to have many 0's -- why?
-    # push!(residuals_0s_arr, residual_0s);
     residuals_nc_arr[c] = residual_nc;
     residuals_0s_arr[c] = residual_0s;
 
@@ -220,7 +173,6 @@ end
 t2 = time_ns();
 println("main loop took $((t2-t1)/1.0e9) s")
 
-#t1 = time_ns();
 function make_plot(;xlim=5.0)
     pl = plot(layout=grid(1,2), size=(1000,500), legend=false)
     h1 = histogram!(pl[1], residuals_nc_arr, bins=LinRange(-xlim,xlim,100), xlab="residual (noise corrected, 3 sigma) / #strips");
