@@ -70,55 +70,89 @@ function set_signal!(arr, mu, A=amp_signal)
     arr .= A.*rand_erf.(1:number_strips, mu);
 end
 
+# truncate an array
+# this works mostly like a cluster finder: it is assumed the central strip is
+# part of the cluster (!!!11!). works up and down from it until it hits an
+# entry equal zero (<1e-18), returns an array of only the central strips.
+# this is the input for the centre of gravity calculation.
+function trunc_arr(arr)
+    N = Int(trunc(length(arr)/2)); # number of central bin
+    z = 1e-16;  # used as a replacement for z (set to machine precision?)
+    ret = zeros(2*N); # returned array
+
+    # loop to the left
+    for i in N:-1:1
+        if arr[i] < z
+            break;
+        end
+        ret[i] = arr[i]; # copy values until reaching zero
+    end
+
+    # loop to the right
+    #NOTE: will probably use arr[N] twice in the loop (but that's ok)
+    for i in N:+1:2*N
+        if arr[i] < z
+            break;
+        end
+        ret[i] = arr[i]; # copy values until reaching zero
+    end
+
+    return ret
+end
+
 # calculate the centre of gravity
 # the CoG is th mean of all bin-heights * bin-positions
 # first, it has some cluster finding: starts at the maximum bin, goes left and
 # right until it finds a bin with value 0.0 and stops there
 function get_cog(arr)
-
-    # contains all values of arr that are neighbours to the cluster
-    # v[i][1] is the position (i.e. strip number)
-    # v[i][2] is the weight (i.e. arr entry)
-    v = [];
-    max_bin_n = findmax(arr)[2];
-
-    i::Int = max_bin_n; # counter
-    max_i::Int = length(arr);
-
-    # left of maximum
-    while i > 0
-        # fill data to v (until minimum is reached)
-        if arr[i] > 0.0
-            push!(v, (i, arr[i]));
-            i = i-1;
-        else
-            break
-        end
-    end
-
-    # reset i (don't count arr[i] twice, though)
-    i = max_bin_n+1;
-
-    # right of maximum
-    while i < max_i
-        # fill data to v (until minimum is reached)
-        if arr[i] > 0.0
-            push!(v, (i, arr[i]));
-            i = i+1;
-        else
-            break
-        end
-    end
-    # cog in units of strip_size
-    # sum((0.5:(length(v)-0.5)) .* v)/sum(v) #TODO: Only works if v is sorted by i
-    cog = 0.0;
-    sumx = 0.0;
-    for x in v
-        cog = cog + ((x[1]-0.5)*x[2]);
-        sumx = sumx + x[2];
-    end
-    cog/sumx
+    tarr = trunc_arr(arr);
+    sum((0.5:(length(tarr)-0.5)) .* tarr)/sum(tarr)
 end
+# function get_cog(arr)
+#
+#     # contains all values of arr that are neighbours to the cluster
+#     # v[i][1] is the position (i.e. strip number)
+#     # v[i][2] is the weight (i.e. arr entry)
+#     v = [];
+#     max_bin_n = findmax(arr)[2];
+#
+#     i::Int = max_bin_n; # counter
+#     max_i::Int = length(arr);
+#
+#     # left of maximum
+#     while i > 0
+#         # fill data to v (until minimum is reached)
+#         if arr[i] > 0.0
+#             push!(v, (i, arr[i]));
+#             i = i-1;
+#         else
+#             break
+#         end
+#     end
+#
+#     # reset i (don't count arr[i] twice, though)
+#     i = max_bin_n+1;
+#
+#     # right of maximum
+#     while i < max_i
+#         # fill data to v (until minimum is reached)
+#         if arr[i] > 0.0
+#             push!(v, (i, arr[i]));
+#             i = i+1;
+#         else
+#             break
+#         end
+#     end
+#     # cog in units of strip_size
+#     # sum((0.5:(length(v)-0.5)) .* v)/sum(v) #TODO: Only works if v is sorted by i
+#     cog = 0.0;
+#     sumx = 0.0;
+#     for x in v
+#         cog = cog + ((x[1]-0.5)*x[2]);
+#         sumx = sumx + x[2];
+#     end
+#     cog/sumx
+# end
 
 
 ### storage arrays ###
@@ -176,7 +210,7 @@ for c in 1:number_events
     # push!(residuals_0s_arr, residual_0s);
     residuals_nc_arr[c] = residual_nc;
     residuals_0s_arr[c] = residual_0s;
-    
+
     # some timing
     tX = (time_ns()-t1)/1.0e9;
     if 10*c % number_events == 0
@@ -202,11 +236,11 @@ end
 
 # plot(
 #     layout=grid(2,3), legend=false,
-#     bar([0:255], noiselevel, xlabel="noise level"), 
-#     bar([0:255], enoise_arr, xlabel="exp. noise"), 
-#     bar([0:255], signal_arr, xlabel="signal"), 
-#     bar([0:255], data_arr, xlabel="signal+noise"), 
-#     bar([0:255], cutted_0s_arr, xlabel="0 supressed"), 
+#     bar([0:255], noiselevel, xlabel="noise level"),
+#     bar([0:255], enoise_arr, xlabel="exp. noise"),
+#     bar([0:255], signal_arr, xlabel="signal"),
+#     bar([0:255], data_arr, xlabel="signal+noise"),
+#     bar([0:255], cutted_0s_arr, xlabel="0 supressed"),
 #     bar([0:255], cutted_nc_arr, xlabel="amp cutted")
 #     )
 
