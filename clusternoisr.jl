@@ -16,6 +16,7 @@
 t0=time_ns();
 
 
+t0=time_ns();
 ### parameters ###
 
 # number of events to loop over
@@ -158,6 +159,7 @@ for c in 1:number_events
     # caclulate the residual
     # not the pull: there is not good meaure for the measurement uncertainty,
     # and it was only a constant value anyway ...
+    #println("cog ", get_cog(cutted_nc_arr))
     residual_nc = (hit_mu[1] - get_cog(cutted_nc_arr));
     residual_0s = (hit_mu[1] - get_cog(cutted_0s_arr));
     # for every event, write out the pull to histo
@@ -172,6 +174,7 @@ for c in 1:number_events
 end
 t2 = time_ns();
 println("main loop took $((t2-t1)/1.0e9) s")
+t1 = time_ns();
 
 function make_plot(;xlim=5.0)
     pl = plot(layout=grid(1,2), size=(1000,500), legend=false)
@@ -200,3 +203,16 @@ t2 = time_ns();
 println("### total time $((t2-t0)/1.0e9) s ###")
 
 make_plot()
+t2 = time_ns();
+println("plotting took $((t2-t1)/1.0e6) ms")
+
+# plot(
+#     layout=grid(2,3), legend=false,
+#     bar([0:255], noiselevel, xlabel="noise level"), 
+#     bar([0:255], enoise_arr, xlabel="exp. noise"), 
+#     bar([0:255], signal_arr, xlabel="signal"), 
+#     bar([0:255], data_arr, xlabel="signal+noise"), 
+#     bar([0:255], cutted_0s_arr, xlabel="0 supressed"), 
+#     bar([0:255], cutted_nc_arr, xlabel="amp cutted")
+#     )
+println("### total time $((t2-t0)/1.0e9) s ###")
