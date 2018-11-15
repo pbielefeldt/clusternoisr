@@ -113,6 +113,9 @@ end
 # right until it finds a bin with value 0.0 and stops there
 function get_cog(arr)
     tarr = trunc_arr(arr);
+    if sum(tarr)==0
+        return 0.0
+    end
     sum((0.5:(length(tarr)-0.5)) .* tarr)/sum(tarr)
 end
 
