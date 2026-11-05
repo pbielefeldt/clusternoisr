@@ -25,7 +25,7 @@ t0=time_ns();
 ### parameters ###
 
 # number of events to loop over
-const number_events = 2000;
+const number_events = 1000;
 # can be set to 1 without loss of generality
 const strip_size = 1;
 # width of the signal cluster, in units of the strip size
@@ -33,7 +33,7 @@ const cluster_width = 5;
 # number of strips in the detector (size of arrays)
 const number_strips = 255;
 # in a.u., height of the signal
-const amp_signal = 200;
+const amp_signal = 300;
 # rms of the noise (after pedestal subtraction), mean over the strips
 const amp_noise = 10;
 # zero-suppression threshold in multiples of the strip's own noise rms:
@@ -224,7 +224,7 @@ function summary(name, arr)
     return csig, cmn
 end
 
-function make_plot(;xlim=2.0)
+function make_plot(;xlim=5.0)
     # signal of the strip under the hit centre (the peak strip) in units of the
     # mean noise: this is the quantity that decides whether the threshold cuts
     # into the cluster core (amp_signal/amp_noise is the *total* signal over noise)
@@ -239,7 +239,7 @@ function make_plot(;xlim=2.0)
         sig, mn = summary(name, arr);
         annotate!([(xlim,0.8*hmax,text("sigma: $(sig) \nmean: $(mn)",:right))], subplot=i)
     end
-    savefig(pl, "clusternoisr_SNR$(Int(round(amp_signal/amp_noise)))_n$(n_threshold).png")
+    savefig(pl, "clusternoisr_SNR$(Int(round(amp_signal/amp_noise)))_n$(Int(n_threshold*100)).png")
     pl
 end
 

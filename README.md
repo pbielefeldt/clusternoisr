@@ -10,13 +10,27 @@ Problem
 
 It is disputed how, in a particle detector, noise should be treated in cluster reconstruction.
 Usually, all electronic channels (pads/strips/…) of the detector have __noise__ of a certain degree. 
-Furthermore, they have __pedestals__ (baselines), which are measured per channel and subtracted in the front-end electronics; what remains is a Gaussian fluctuation with mean zero whose rms is the noise of the channel (Vandenbroucke, PhD 2012, sec. 4.5.1; Berger et al., NIM A 869 (2017) 180, sec. 12.2; Alme et al., NIM A 622 (2010) 316, sec. 10.3.1).
-It is usual to remove all channels from analysis that have signal (i.e. physics signal plus noise) smaller than a multiple `n` of the noise rms of the channel; `n` is 3 for the COMPASS GEM trackers and the ALICE TPC, 3.5 for the Bonn GEM-TPC cosmics (Berger, PhD 2015, sec. VIII.1) and 4.5 for the T2K TPCs and the FOPI GEM-TPC (Abgrall et al., NIM A 637 (2011) 25, sec. 7.1.1; Böhmer et al., NIM A 737 (2014) 214, tab. 1).
+Furthermore, they have __pedestals__ (baselines), which are measured per channel and subtracted in the front-end electronics; what remains is a Gaussian fluctuation with mean zero whose rms is the noise of the channel.
+It is usual to remove all channels from analysis that have signal (i.e. physics signal plus noise) smaller than a multiple `n` of the noise rms of the channel; with `n` anywhere between 3 and 5 typically.
+
 Now, for the remaining channels, it is unclear whether or not the nσ cut applied to the signal should also be applied to the analysed data. 
-If done so, the remaining signal is smoother. 
-Else, the edges will be sharper.
-However, since the nσ cut is somewhat arbritrary, many argue it is more accurate to only cut 1σ (the assumed noise) from the signal. 
+If done so, the remaining signal is smoother, else, the edges will be sharper.
+A "smoother" (gaussian) distribution of the signal over neighboring strips/pads might make it easier to fit to them for a precise definition of the centre of the hit.
+However, in reality, gauss-fits to determine the centre of a hit are rarely done.
+Mostly, an averaging algorithm (Steiner's theorem or similar) is usually applied to calculate a centre of gravity of the hit.
+For such calculations, the "sharper" shape of the cut ditribution might lead to smaller uncertainties.
+
+In brief: Fitting to a broad, smooth signal can yield the best results, while for averaging a smaller number of strips/pads might be more beneficial.
+
+Note: It might seem counter-intuitive, but yes, a broaders signal (over more than one strip), generally yields in a higher spatial resolution -- up to a certain point at least.
+
+Since the nσ cut is somewhat arbritrary, many argue it is more accurate to only cut 1σ (the assumed noise) from the signal. 
 It can also be argued that the entire (pedestal-corrected) signal should be taken for finding the centre of gravity; that is what the readouts referenced above do.
+
+There are three options:
+1. The **signal over threshold** (`pedestal + nσ`) is used to calculate the hit's mean position (either by fitting a function to the histogram, or by averaging for a centre of gravity)
+2. The **signal over pedestal** is used to calculate the position: all strips with signal > threshold are used, but nσ is not subtracted from (or re-added to) their values
+3. The **actual signal** is used, i.e. all strips with signal < threshold are removed, and then the mean is calculated from the signal value (without any subtraction, or with pedestal + nσ re-added) 
 
 
 Input
@@ -41,9 +55,6 @@ __Option 1__ ("only zeros suppressed"): keep the pedestal-corrected amplitude. T
 __Option 2__ ("1σ subtracted"): subtract one noise level of the strip.
 
 __Option 3__ ("noise corrected"): subtract the full threshold, `n_threshold` noise levels of the strip.
-
-(The figure below is from the earlier version of the script with exponential noise, a global cut and two options; it shows the arrays for a high SNR of 100 so that the peak is overly visible.)
-![all arrays for large peak](https://user-images.githubusercontent.com/13000622/48423934-e2570d80-e761-11e8-95ed-b877430366f2.png)
 
 
 Cluster Finding
