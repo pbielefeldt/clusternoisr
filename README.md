@@ -9,9 +9,14 @@ Problem
 -------
 
 It is disputed how, in a particle detector, noise should be treated in cluster reconstruction.
-Usually, all electronic channels (pads/strips/…) of the detector have __noise__ of a certain degree. 
-Furthermore, they have __pedestals__ (baselines), which are measured per channel and subtracted in the front-end electronics; what remains is a Gaussian fluctuation with mean zero whose rms is the noise of the channel.
-It is usual to remove all channels from analysis that have signal (i.e. physics signal plus noise) smaller than a multiple `n` of the noise rms of the channel; with `n` anywhere between 3 and 5 typically.
+The terms used here, per electronic channel (pad/strip/…) `i`:
+
+* __pedestal__ `p_i`: the baseline of the channel, the mean reading without signal. It is measured per channel and subtracted in the front-end electronics; all amplitudes below are pedestal-subtracted, so the baseline is at zero.
+* __noise__ `e_i`: the fluctuation of one reading around the baseline. It is Gaussian with mean zero and can be positive or negative; one measurement reads `d_i = s_i + e_i` for a signal `s_i`.
+* __noise rms__ `σ_i`: the rms of `e_i`, measured from many readings without signal. It differs from channel to channel.
+* __threshold__ `t_i = n σ_i`: the zero-suppression cut (`p_i + n σ_i` in raw ADC counts). `n` is typically between 3 and 5.
+
+It is usual to remove all channels from analysis that have a reading (i.e. physics signal plus noise) below their threshold.
 
 Now, for the remaining channels, it is unclear whether or not the nσ cut applied to the signal should also be applied to the analysed data. 
 If done so, the remaining signal is smoother, else, the edges will be sharper.
@@ -27,40 +32,40 @@ Note: It might seem counter-intuitive, but yes, a broaders signal (over more tha
 Since the nσ cut is somewhat arbritrary, many argue it is more accurate to only cut 1σ (the assumed noise) from the signal. 
 It can also be argued that the entire (pedestal-corrected) signal should be taken for finding the centre of gravity; that is what the readouts referenced above do.
 
-There are three options:
-1. The **signal over threshold** (`pedestal + nσ`) is used to calculate the hit's mean position (either by fitting a function to the histogram, or by averaging for a centre of gravity)
-2. The **signal over pedestal** is used to calculate the position: all strips with signal > threshold are used, but nσ is not subtracted from (or re-added to) their values
-3. The **actual signal** is used, i.e. all strips with signal < threshold are removed, and then the mean is calculated from the signal value (without any subtraction, or with pedestal + nσ re-added) 
+In all cases, only the strips with `d_i ≥ t_i` are used; the options differ in the amplitude these strips enter the position calculation (fit or centre of gravity) with:
+1. The **signal over pedestal** `d_i`: nothing is subtracted from the surviving strips. This is what the readouts referenced below store.
+2. The **signal minus 1σ** `d_i - σ_i`.
+3. The **signal over threshold** `d_i - t_i = d_i - n σ_i`.
 
 
 Input
 -----
 
 A 2D __strip plane__ is assumed as geometry (default: 255 strips wide).
-Each strip is associated with a randomly chosen __noise level__ (its noise rms; per simulation, not per event), that is gaussianly shaped around `amp_noise`.
+Each strip is associated with a randomly chosen __noise rms__ `σ_i` (`noise_rms`; per simulation, not per event), that is gaussianly shaped around `amp_noise`, and the threshold `t_i = n_threshold σ_i` (`threshold`).
 Take `number_events` runs in the loop. 
 In each, do the following:
- * For each strip, calculate an event-specific noise. That is *Gaussian* with mean zero and the noise level of this strip as rms, i.e. the pedestal-corrected reading of a channel without signal. 
- * Place a hit at a position drawn uniformly over the strip plane (excluding a margin at the edges). It has a *gauss shape*, with an amplitude of `amp_signal` and a width of `cluster_width`.
+ * For each strip, calculate an event-specific noise. That is *Gaussian* with mean zero and the noise rms of this strip, i.e. the pedestal-corrected reading of a channel without signal. 
+ * Place a hit at a position drawn uniformly over the strip plane (excluding a margin at the edges). It has a *gauss shape* with standard deviation `cluster_width` (in strips) and total charge `amp_signal` (the integral over all strips); each strip receives the integral of the Gauss over its width. The strip under the hit centre gets the fraction `erf(1/(2√2 cluster_width))` of the total charge, e.g. 11 % for `cluster_width = 3.5`, 38 % for 1 strip, 95 % for 0.25 strips. This *peak strip* amplitude over the noise rms, not `amp_signal/amp_noise`, decides whether the threshold cuts into the cluster.
  * Add up signal and Gaussian noise (`data_arr = enoise_arr.+signal_arr`)
 
 
 Noise Suppression
 -----------------
 
-All strips with an amplitude below `n_threshold` times their own noise level are set to zero (zero suppression). The surviving strips are then treated in three ways:
+All strips with an amplitude below their threshold `t_i = n_threshold σ_i` are set to zero (zero suppression). The surviving strips are then treated in three ways:
 
 __Option 1__ ("only zeros suppressed"): keep the pedestal-corrected amplitude. This is what the referenced readouts store.
 
-__Option 2__ ("1σ subtracted"): subtract one noise level of the strip.
+__Option 2__ ("1σ subtracted"): subtract the noise rms `σ_i` of the strip.
 
-__Option 3__ ("noise corrected"): subtract the full threshold, `n_threshold` noise levels of the strip.
+__Option 3__ ("noise corrected"): subtract the full threshold `t_i`.
 
 
 Cluster Finding
 ---------------
 
-As can be seen from the figure above, there are some bins with entries that apparently do not belong to the signal.
+Strips far away from the hit can pass the threshold by a noise fluctuation alone: the probability per strip is `1 - Φ(n)`, about 0.13 % for `n = 3`, i.e. roughly one noise strip every three events on a 255-strip plane.
 Such things of course always happen in real data.
 In this very comprehensive Monte Carlo study, a simplistic approach is used to handle the situation:
 The strip with the largest amplitude seeds the cluster, and the cluster is the group of adjacent strips above threshold.
@@ -81,7 +86,10 @@ Relevant Read
 Example Outcome
 ---------------
 
-The script prints the width (sigma) and mean of the residual distribution for the three options and saves the histograms as `clusternoisr_SNR<amp_signal/amp_noise>_n<n_threshold>.png`.
+`julia clusternoisr.jl` prints the width (sigma) and mean of the residual distribution for the three options and saves the histograms as `clusternoisr_peakSNR<peak strip/amp_noise>_n<100 n_threshold>.png`.
+The parameters at the top of the script can be overridden from the environment, e.g. `NUMBER_EVENTS=4000 AMP_SIGNAL=1200 AMP_NOISE=20 julia clusternoisr.jl`.
+
+`julia scan.jl` (which includes `clusternoisr.jl`) scans the cluster width and the peak strip signal over noise instead, prints a table of core sigma and outlier fraction per cell, and saves `clusternoisr_scan_n<100 n_threshold>.png` (core sigma and outlier fraction against cluster width) and `clusternoisr_scurve_SNR<peak strip/amp_noise>_n<100 n_threshold>.png` (mean residual against the hit position within a strip).
 
 The figures of the earlier version (exponential noise, global 3×noise cut, fixed hit position on a strip boundary, two options) are kept for reference:
 ![large amp - snr 30](https://user-images.githubusercontent.com/13000622/48422474-0402c580-e75f-11e8-8738-3a04c55b6b8d.png)
