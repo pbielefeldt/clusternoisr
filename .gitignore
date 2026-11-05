@@ -2,3 +2,16 @@
 *.jl.*.cov
 *.jl.mem
 deps/deps.jl
+
+# output of clusternoisr.jl and scan.jl
+clusternoisr_*.png
+
+# LaTeX build files
+doc/*.aux
+doc/*.log
+doc/*.out
+doc/*.toc
+doc/*.synctex.gz
+
+# handout, kept local
+doc/

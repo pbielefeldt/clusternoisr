@@ -64,8 +64,8 @@ end
 function plot_scan(results)
     pl = plot(layout=grid(2, length(peak_snrs)), size=(500*length(peak_snrs), 800),
               plot_title="threshold $(n_threshold) sigma, $(events_per_cell) events per point, noise rms $(amp_noise) ± $(round(amp_noise/3, digits=1))",
-              legend=:topright, xscale=:log2, xticks=(widths, string.(widths)), xlab="cluster sigma / strips",
-              left_margin=8Plots.mm, bottom_margin=5Plots.mm)
+              legend=:topright, xscale=:log2, xticks=(widths, string.(widths)),
+              left_margin=10Plots.mm, bottom_margin=8Plots.mm)
     for (j, snr) in enumerate(peak_snrs)
         for (i, (name, key)) in enumerate(zip(option_names, option_keys))
             csig = Float64[]; outl = Float64[];
@@ -75,9 +75,10 @@ function plot_scan(results)
                 push!(csig, std(core)); push!(outl, 100*(1-length(core)/length(arr)));
             end
             plot!(pl[j], widths, csig, label=name, color=option_colors[i], marker=option_markers[i], markersize=5, lw=2,
-                  title="peak strip / noise = $(snr)", ylab="core sigma (|res|<2) / strips", ylim=(0, 1.2))
+                  title="peak strip / noise = $(snr)", xlab="cluster sigma / strips",
+                  ylab="resolution (rms, |residual| < 2) / strips", ylim=(0, 1.2))
             plot!(pl[length(peak_snrs)+j], widths, outl, label=name, color=option_colors[i], marker=option_markers[i], markersize=5, lw=2,
-                  ylab="|res| > 2 strips / %")
+                  xlab="cluster sigma / strips", ylab="lost clusters: |residual| > 2 strips / %")
         end
     end
     savefig(pl, "clusternoisr_scan_n$(Int(n_threshold*100)).png")
@@ -89,10 +90,9 @@ end
 function plot_scurve(results)
     edges = LinRange(0, strip_size, nbins+1);
     centres = 0.5*(edges[1:end-1] .+ edges[2:end]);
-    ps = plot(layout=grid(1, length(widths)), size=(500*length(widths), 450),
-              plot_title="mean residual against hit position within the strip, peak strip / noise = $(scurve_snr), threshold $(n_threshold) sigma",
-              legend=:topright, xlab="hit position within strip / strip size", ylab="mean residual / strips",
-              left_margin=8Plots.mm, bottom_margin=5Plots.mm)
+    ps = plot(layout=grid(1, length(widths)), size=(500*length(widths), 600),
+              plot_title="mean residual (hit - CoG) against the hit position within the strip, peak strip / noise = $(scurve_snr), threshold $(n_threshold) sigma",
+              legend=:topright, left_margin=12Plots.mm, bottom_margin=12Plots.mm)
     for (j, w) in enumerate(widths)
         sim = results[(w, scurve_snr)];
         frac = mod.(sim.hits, strip_size);
@@ -100,7 +100,8 @@ function plot_scurve(results)
             arr = sim[key];
             m = [mean(arr[(edges[b] .<= frac .< edges[b+1]) .& (abs.(arr) .< 2.0)]) for b in 1:nbins];
             plot!(ps[j], centres, m, label=name, color=option_colors[i], marker=option_markers[i], markersize=4, lw=2,
-                  title="cluster sigma $(w) strips")
+                  title="cluster sigma $(w) strips", xlab="hit position within strip / strip size",
+                  ylab="mean residual / strips")
         end
         hline!(ps[j], [0.0], color=:gray, linestyle=:dash, label="")
     end

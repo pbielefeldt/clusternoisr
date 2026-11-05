@@ -253,7 +253,7 @@ function make_plot(sim; xlim=5.0, amp_signal=amp_signal, amp_noise=amp_noise,
               plot_title="peak strip / noise $(round(peak/amp_noise, digits=1)) (total charge / noise $(round(amp_signal/amp_noise, digits=1))), threshold $(n_threshold) sigma, cluster sigma $(cluster_width) strips, $(length(sim.hits)) events")
     for (i, (name, key)) in enumerate(zip(option_names, option_keys))
         arr = sim[key];
-        histogram!(pl[i], arr, bins=LinRange(-xlim,xlim,100), title=name, xlab="residual / #strips", color=option_colors[i], linecolor=option_colors[i]);
+        histogram!(pl[i], arr, bins=LinRange(-xlim,xlim,100), title=name, xlab="residual (hit - CoG) / strips", color=option_colors[i], linecolor=option_colors[i]);
         hmax = max(pl[i][1][:y][1:6:end]...);
         sig, mn, out = summary(name, arr);
         annotate!([(xlim,0.8*hmax,text("sigma: $(sig) \nmean: $(mn)",:right))], subplot=i)
